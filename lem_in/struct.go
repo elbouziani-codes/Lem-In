@@ -1,11 +1,12 @@
 package lem_in
 
+
 type Rooms struct{
 	Name string
 	X,Y int
 	Star bool
 	End bool
-	IDLinks int
+	IDLinks []int
 	IN int
 }
 
@@ -15,22 +16,28 @@ type Links struct{
 	To *Rooms
 }
 
-type Ants struct{
-	ID int
-	LocationX,LocationY int
-	Room Rooms
-	Link Links
+type Graph struct{
+	Rooms []Rooms
+	Links []Links
+	Ants []Ants
+	CountLinks int
 }
 
-// func (rm Rooms) check() bool{
-// 	for i := 0; i < len(AllRooms); i++ {
-// 			if AllRooms[i].Name == rm.Name {
-// 				return true
-// 			}
-// 	}
-// 	return false
-// }
-var AllRooms []Rooms
-var AllLinks []Links
-var AllAnts []Ants
-var CountLinks int = 0
+
+type Ants struct{
+	ID string
+	LocationX int
+	LocationY int
+	Room *Rooms
+	Link *Links
+}
+func (RM Rooms) Info() (int ,int , bool ,bool){
+	return RM.X , RM.Y ,RM.Star ,RM.End
+}
+func (LK Links) Info() (int ,string , string){
+	return LK.ID , LK.From.Name ,LK.To.Name
+}
+
+var RmStar *Rooms
+var NumberAnts int
+var G Graph
