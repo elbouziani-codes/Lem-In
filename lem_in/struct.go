@@ -7,6 +7,7 @@ type Rooms struct{
 	End bool
 	IDLinks []int
 	IN int
+	Ants *Ants
 }
 
 type Links struct{
@@ -32,7 +33,6 @@ type Ants struct{
 	LocationX int
 	LocationY int
 	Room *Rooms
-	Link *Links
 }
 func (RM Rooms) Info() (int ,int , bool ,bool){
 	return RM.X , RM.Y ,RM.Star ,RM.End

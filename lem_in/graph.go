@@ -39,11 +39,13 @@ func CreatGraph() [][]*Rooms{
 		break
 	}
 	G.Visited = make(map[string]bool)
-    for _, room := range path {
-        if room != G.RmStar && room != G.RmEnd {
-            G.Visited[room.Name] = true  
-        }
-    }
+	for _, a := range all{
+    	for _, room := range a {
+        	if room != G.RmStar && room != G.RmEnd {
+            	G.Visited[room.Name] = true  
+        	}
+    	}
+	}
 }
 	fmt.Println("All paths:")
 	for _, p := range all {

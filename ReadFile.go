@@ -1,12 +1,13 @@
 package main
 
 import (
-	"Lem-in/lem_in"
 	"log"
 	"os"
 	"slices"
 	"strconv"
 	"strings"
+
+	"Lem-in/lem_in"
 )
 
 var xStart, yStart int
@@ -35,7 +36,7 @@ func ReadAllLines(NameFile string) (string, bool) {
 	parsingAnts()
 	checkRoomLinkes()
 	lem_in.GraphRoomsAndLinkes()
-	lem_in.CreatGraph()
+	lem_in.MoveAnt(lem_in.CreatGraph())
 	return str, true
 }
 
@@ -53,6 +54,7 @@ func ValidContent(s string) (string, bool) {
 			if numberAnts <= 0 {
 				return "Error in Number ants", false
 			}
+			lem_in.NumberAnts = numberAnts
 			break
 		}
 	}
@@ -138,6 +140,7 @@ func validRoom(s []string, sore int) {
 				End:     false,
 				IDLinks: []int{},
 				IN:      Unlimited,
+				Ants:    nil,
 			})
 			lem_in.G.RmStar = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
 			xStart = n1
@@ -152,6 +155,7 @@ func validRoom(s []string, sore int) {
 				End:     true,
 				IDLinks: []int{},
 				IN:      Unlimited,
+				Ants:    nil,
 			})
 			lem_in.G.RmEnd = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
 
@@ -164,6 +168,7 @@ func validRoom(s []string, sore int) {
 				End:     false,
 				IDLinks: []int{},
 				IN:      Empty,
+				Ants:    nil,
 			})
 		}
 		// room.IN == -2 => capacity all ant -2 in start and end
@@ -173,6 +178,7 @@ func validRoom(s []string, sore int) {
 		log.Fatalln("Error in content file 171")
 	}
 }
+
 func validLink(s string) {
 	mini_slice := strings.Split(s, "-")
 	count := 0
@@ -227,7 +233,6 @@ func validRoomsRepet() {
 				log.Fatal("Erorr in content File 225")
 			}
 		}
-
 	}
 	star := false
 	end := false
@@ -243,7 +248,6 @@ func validRoomsRepet() {
 			continue
 		}
 		if star && end {
-
 		}
 	}
 	if !star || !end {
@@ -263,7 +267,6 @@ func validLinksRepet() {
 			}
 
 		}
-
 	}
 	for i := 0; i < len(lem_in.G.Links); i++ {
 		ID, rm1, rm2 := lem_in.G.Links[i].Info()
@@ -286,13 +289,11 @@ func parsingAnts() {
 			LocationX: xStart,
 			LocationY: yStart,
 			Room:      lem_in.G.RmStar,
-			Link:      nil,
 		})
 	}
 }
 
 func checkRoomLinkes() {
-
 	for i := len(lem_in.G.Rooms) - 1; i >= 0; i-- {
 		if len(lem_in.G.Rooms[i].IDLinks) == 0 {
 			if lem_in.G.Rooms[i].Star || lem_in.G.Rooms[i].End {
