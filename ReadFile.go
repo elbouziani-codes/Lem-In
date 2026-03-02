@@ -8,14 +8,15 @@ import (
 	"strconv"
 	"strings"
 )
-	
-	var xStart ,yStart int
-	const (
-		Unlimited = -2
-		Empty     = 0
-		Full      = 1
-	)
-	
+
+var xStart, yStart int
+
+const (
+	Unlimited = -2
+	Empty     = 0
+	Full      = 1
+)
+
 func ReadAllLines(NameFile string) (string, bool) {
 	newName := strings.ToLower(NameFile)
 	if !strings.HasSuffix(newName, ".txt") {
@@ -31,19 +32,31 @@ func ReadAllLines(NameFile string) (string, bool) {
 	}
 	validRoomsRepet()
 	validLinksRepet()
+	parsingAnts()
+	checkRoomLinkes()
+	lem_in.GraphRoomsAndLinkes()
+	lem_in.CreatGraph()
 	return str, true
 }
 
 func ValidContent(s string) (string, bool) {
 	slice := strings.Split(s, "\n")
-	numberAnts, err := strconv.Atoi(slice[0])
-	if err != nil {
-		return err.Error(), false
+	i := 0
+	for ; i < len(slice); i++ {
+		if len(slice[i]) == 0 {
+			continue
+		} else {
+			numberAnts, err := strconv.Atoi(slice[i])
+			if err != nil {
+				return err.Error(), false
+			}
+			if numberAnts <= 0 {
+				return "Error in Number ants", false
+			}
+			break
+		}
 	}
-	if numberAnts <= 0 {
-		return "Error in Number ants", false
-	}
-	slice = slice[1:]
+	slice = slice[i+1:]
 	validSlice(slice)
 	return s, true
 }
@@ -51,30 +64,31 @@ func ValidContent(s string) (string, bool) {
 func validSlice(slice []string) {
 	countStar := 0
 	countEnd := 0
-	for i := 0; i < len(slice); i++ {
+	i := 0
+	for ; i < len(slice); i++ {
 		if len(slice[i]) == 0 {
 			continue
 		}
 		if slice[i][0] == '#' {
 			if slice[i] == "##start" {
 				if countStar == 1 {
-					log.Fatalln("Error in content file")
+					log.Fatalln("Error in content file 75")
 				}
 				countStar++
 				i += 1
 				if i >= len(slice) {
-					log.Fatal("Error in content file")
+					log.Fatal("Error in content file 80")
 				}
 				validRoom(strings.Split(slice[i], " "), 1)
 				continue
 			} else if slice[i] == "##end" {
 				if countEnd == 1 {
-					log.Fatalln("Error in content file")
+					log.Fatalln("Error in content file 86")
 				}
 				countEnd++
 				i += 1
 				if i >= len(slice) {
-					log.Fatal("Error in content file")
+					log.Fatal("Error in content file 91")
 				}
 				validRoom(strings.Split(slice[i], " "), -1)
 				continue
@@ -82,20 +96,29 @@ func validSlice(slice []string) {
 				continue
 			}
 		}
-		mini_slice := strings.Split(slice[i], " ")
+		mini_slice := strings.Split(strings.TrimSpace(slice[i]), " ")
 		if len(mini_slice) == 3 {
-			validRoom(strings.Split(slice[i], " "), 0)
-		} else if len(mini_slice) == 1 && strings.Contains(slice[i], "-") {
-			validLink(slice[i])
+			validRoom(strings.Split(strings.TrimSpace(slice[i]), " "), 0)
 		} else {
-			log.Fatalln("Error in content file")
+			break
+		}
+	}
+	for ; i < len(slice); i++ {
+		if len(slice[i]) == 0 {
+			continue
+		} else if slice[i][0] == '#' {
+			continue
+		} else if strings.Contains(slice[i], "-") {
+			validLink(strings.TrimSpace(slice[i]))
+		} else {
+			log.Fatalln("Error in content file 112")
 		}
 	}
 }
 
 func validRoom(s []string, sore int) {
 	if !check(s[0]) {
-		log.Fatalln("Error in content file")
+		log.Fatalln("Error in content file 119")
 	}
 	if len(s) == 3 {
 		n1, err := strconv.Atoi(s[1])
@@ -116,10 +139,10 @@ func validRoom(s []string, sore int) {
 				IDLinks: []int{},
 				IN:      Unlimited,
 			})
-			lem_in.RmStar = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
+			lem_in.G.RmStar = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
 			xStart = n1
 			yStart = n2
-			
+
 		} else if sore == -1 {
 			lem_in.G.Rooms = append(lem_in.G.Rooms, lem_in.Rooms{
 				Name:    s[0],
@@ -130,6 +153,8 @@ func validRoom(s []string, sore int) {
 				IDLinks: []int{},
 				IN:      Unlimited,
 			})
+			lem_in.G.RmEnd = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
+
 		} else if sore == 0 {
 			lem_in.G.Rooms = append(lem_in.G.Rooms, lem_in.Rooms{
 				Name:    s[0],
@@ -141,19 +166,19 @@ func validRoom(s []string, sore int) {
 				IN:      Empty,
 			})
 		}
-		// room.IN == -2 => capacity all ant -2 in start and end 
+		// room.IN == -2 => capacity all ant -2 in start and end
 		// room.IN == 0 =>  0 ant max capacity =1
 		// room.IN == 1 => 1 ant full capacity
 	} else {
-		log.Fatalln("Error in content file")
+		log.Fatalln("Error in content file 171")
 	}
 }
 func validLink(s string) {
 	mini_slice := strings.Split(s, "-")
 	count := 0
-	if len(mini_slice) == 2 && mini_slice[0] != mini_slice[1] {
+	if len(mini_slice) == 2 && strings.TrimSpace(mini_slice[0]) != strings.TrimSpace(mini_slice[1]) {
 		for i, RM := range lem_in.G.Rooms {
-			if RM.Name == mini_slice[0] {
+			if RM.Name == strings.TrimSpace(mini_slice[0]) {
 				lem_in.G.CountLinks++
 				lem_in.G.Links = append(lem_in.G.Links, lem_in.Links{
 					ID:   lem_in.G.CountLinks,
@@ -165,7 +190,7 @@ func validLink(s string) {
 			}
 		}
 		for i, RM := range lem_in.G.Rooms {
-			if RM.Name == mini_slice[1] {
+			if RM.Name == strings.TrimSpace(mini_slice[1]) {
 				for j, LK := range lem_in.G.Links {
 					if LK.ID == lem_in.G.CountLinks {
 						lem_in.G.Links[j].To = &lem_in.G.Rooms[i]
@@ -177,10 +202,10 @@ func validLink(s string) {
 			}
 		}
 		if count != 2 {
-			log.Fatalln("Error in content file")
+			log.Fatalln("Error in content file 203")
 		}
 	} else {
-		log.Fatalln("Error in content file")
+		log.Fatalln("Error in content file 206")
 	}
 }
 
@@ -199,7 +224,7 @@ func validRoomsRepet() {
 			X1, Y1, _, _ := lem_in.G.Rooms[i].Info()
 			X2, Y2, _, _ := lem_in.G.Rooms[j].Info()
 			if (X1 == X2) && (Y1 == Y2) {
-				log.Fatal("Erorr in content File 178")
+				log.Fatal("Erorr in content File 225")
 			}
 		}
 
@@ -209,7 +234,7 @@ func validRoomsRepet() {
 	for i := 0; i < len(lem_in.G.Rooms); i++ {
 		_, _, s, e := lem_in.G.Rooms[i].Info()
 		if s && e {
-			log.Fatal("Erorr in content File")
+			log.Fatal("Erorr in content File 235")
 		} else if s && !e {
 			star = true
 		} else if e && !s {
@@ -222,7 +247,7 @@ func validRoomsRepet() {
 		}
 	}
 	if !star || !end {
-		log.Fatal("Erorr in content File")
+		log.Fatal("Erorr in content File 248")
 	}
 }
 
@@ -232,9 +257,9 @@ func validLinksRepet() {
 			ID1, RM11, RM12 := lem_in.G.Links[i].Info()
 			ID2, RM21, RM22 := lem_in.G.Links[j].Info()
 			if ((RM11 == RM21) && (RM12 == RM22)) || ID1 == ID2 {
-				log.Fatal("Erorr in content File")
+				log.Fatal("Erorr in content File 258")
 			} else if (RM11 == RM22) && (RM12 == RM21) {
-				log.Fatal("Erorr in content File")
+				log.Fatal("Erorr in content File 260")
 			}
 
 		}
@@ -243,7 +268,7 @@ func validLinksRepet() {
 	for i := 0; i < len(lem_in.G.Links); i++ {
 		ID, rm1, rm2 := lem_in.G.Links[i].Info()
 		if rm1 == rm2 {
-			log.Fatal("Erorr in content File")
+			log.Fatal("Erorr in content File 269")
 		}
 		if !slices.Contains(lem_in.G.Links[i].From.IDLinks, ID) {
 			lem_in.G.Links[i].From.IDLinks = append(lem_in.G.Links[i].From.IDLinks, ID)
@@ -254,14 +279,27 @@ func validLinksRepet() {
 	}
 }
 
-func parsingAnts(){
-	for i := 1; i <= lem_in.NumberAnts ; i++ {
+func parsingAnts() {
+	for i := 1; i <= lem_in.NumberAnts; i++ {
 		lem_in.G.Ants = append(lem_in.G.Ants, lem_in.Ants{
-			ID: "L"+strconv.Itoa(i),
+			ID:        "L" + strconv.Itoa(i),
 			LocationX: xStart,
 			LocationY: yStart,
-			Room: lem_in.RmStar,
-			Link: nil,
+			Room:      lem_in.G.RmStar,
+			Link:      nil,
 		})
+	}
+}
+
+func checkRoomLinkes() {
+
+	for i := len(lem_in.G.Rooms) - 1; i >= 0; i-- {
+		if len(lem_in.G.Rooms[i].IDLinks) == 0 {
+			if lem_in.G.Rooms[i].Star || lem_in.G.Rooms[i].End {
+				log.Fatalln("Error in content File 297")
+			} else {
+				lem_in.G.Rooms = append(lem_in.G.Rooms[:i], lem_in.G.Rooms[i+1:]...)
+			}
+		}
 	}
 }

@@ -1,6 +1,5 @@
 package lem_in
 
-
 type Rooms struct{
 	Name string
 	X,Y int
@@ -20,10 +19,14 @@ type Graph struct{
 	Rooms []Rooms
 	Links []Links
 	Ants []Ants
+	Network map[string][]*Rooms
+	Visited map[string]bool
 	CountLinks int
+	RmStar *Rooms
+	RmEnd *Rooms
 }
 
-
+	
 type Ants struct{
 	ID string
 	LocationX int
@@ -38,6 +41,5 @@ func (LK Links) Info() (int ,string , string){
 	return LK.ID , LK.From.Name ,LK.To.Name
 }
 
-var RmStar *Rooms
 var NumberAnts int
 var G Graph
