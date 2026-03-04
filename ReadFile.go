@@ -12,12 +12,6 @@ import (
 
 var xStart, yStart int
 
-const (
-	Unlimited = -2
-	Empty     = 0
-	Full      = 1
-)
-
 func ReadAllLines(NameFile string) (string, bool) {
 	newName := strings.ToLower(NameFile)
 	if !strings.HasSuffix(newName, ".txt") {
@@ -140,7 +134,7 @@ func validRoom(s []string, sore int) {
 				Star:    true,
 				End:     false,
 				IDLinks: []int{},
-				IN:      Unlimited,
+				IN:      lem_in.START,
 				Ants:    nil,
 			})
 			lem_in.G.RmStar = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
@@ -155,7 +149,7 @@ func validRoom(s []string, sore int) {
 				Star:    false,
 				End:     true,
 				IDLinks: []int{},
-				IN:      Unlimited,
+				IN:      lem_in.END,
 				Ants:    nil,
 			})
 			lem_in.G.RmEnd = &lem_in.G.Rooms[len(lem_in.G.Rooms)-1]
@@ -168,7 +162,7 @@ func validRoom(s []string, sore int) {
 				Star:    false,
 				End:     false,
 				IDLinks: []int{},
-				IN:      Empty,
+				IN:      lem_in.EMPTY,
 				Ants:    nil,
 			})
 		}

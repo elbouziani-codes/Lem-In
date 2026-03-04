@@ -1,9 +1,5 @@
 package lem_in
 
-import (
-	"fmt"
-)
-
 func GraphRoomsAndLinkes() {
 	G.Network = make(map[string][]*Rooms)
 	for _, link := range G.Links {
@@ -67,13 +63,6 @@ func CreatGraph() [][]*Rooms {
 				}
 			}
 		}
-	}
-	fmt.Println("All paths:")
-	for _, p := range all {
-		for _, r := range p {
-			fmt.Print(r.Name, " ")
-		}
-		fmt.Println()
 	}
 	return all
 }
