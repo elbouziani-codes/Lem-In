@@ -17,6 +17,8 @@ func GeniretPath(parent map[*Rooms]*Rooms) []*Rooms {
 	cur := G.RmEnd
 	var res []*Rooms
 	for cur != nil {
+		fmt.Println(cur)
+		fmt.Println(parent[cur])
 		res = append(res, cur)
 		cur = parent[cur]
 	}
@@ -40,46 +42,65 @@ func equalPath(a, b []*Rooms) bool {
 }
 
 func CreatGraph() [][]*Rooms {
-	var all [][]*Rooms
-	usedRooms := make(map[string]bool)
-
-	for {
-		G.Visited = make(map[string]bool)
-
-		// منع الغرف الداخلية المستعملة سابقاً
-		for name := range usedRooms {
-			G.Visited[name] = true
-		}
-		parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
-		if parent == nil {
-			if len(all) != 0 {
-				return all
-			}
-			log.Fatalln("Error in path not conection betwine star and end ")
-		}
-
-		path := GeniretPath(parent)
-		if path[0] == G.RmStar && path[len(path)-1] == G.RmEnd {
-			log.Fatalln("Error in path not conection betwine star and end ")
-		}
-		if len(all) > 0 {
-			last := all[len(all)-1]
-			if equalPath(last, path) {
-				break
-			}
-		}
-
-		all = append(all, path)
-
-		if len(path) == 2 {
+	multiPath := false
+	for _, v := range G.Network {
+		if len(v) > 2 {
+			multiPath = true
 			break
 		}
-		for _, room := range path {
-			if room != G.RmStar && room != G.RmEnd {
-				usedRooms[room.Name] = true
+	}
+	var all [][]*Rooms
+	usedRooms := make(map[string]bool)
+	if multiPath {
+		for {
+			G.Visited = make(map[string]bool)
+
+			// منع الغرف الداخلية المستعملة سابقاً
+			for name := range usedRooms {
+				G.Visited[name] = true
+			}
+			parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
+			if parent == nil {
+				if len(all) != 0 {
+					return all
+				}
+				log.Fatalln("Error in path not conection betwine star and end ")
+			}
+
+			path := GeniretPath(parent)
+			if path[0] == G.RmStar && path[len(path)-1] == G.RmEnd {
+				log.Fatalln("Error in path not conection betwine star and end ")
+			}
+			if len(all) > 0 {
+				last := all[len(all)-1]
+				if equalPath(last, path) {
+					break
+				}
+			}
+
+			all = append(all, path)
+
+			if len(path) == 2 {
+				break
+			}
+			for _, room := range path {
+				if room != G.RmStar && room != G.RmEnd {
+					usedRooms[room.Name] = true
+				}
 			}
 		}
+	}else{
+		path := Dfs(G.RmStar.Name, G.RmEnd.Name)
+			if path == nil {
+				log.Fatalln("Error in path not conection betwine star and end ")
+			}
+
+			if path[0] == G.RmStar && path[len(path)-1] == G.RmEnd {
+				log.Fatalln("Error in path not conection betwine star and end ")
+			}
+			all = append(all, path)
 	}
+
 	fmt.Println("All paths:")
 
 	for _, p := range all {
@@ -104,6 +125,7 @@ func Bfs(start string, end string) map[*Rooms]*Rooms {
 	for len(queue) > 0 {
 		st := queue[0]
 		queue = queue[1:]
+		fmt.Println(st)
 		for _, next := range G.Network[st.Name] {
 			if !G.Visited[next.Name] {
 				parent[next] = st
@@ -118,4 +140,32 @@ func Bfs(start string, end string) map[*Rooms]*Rooms {
 		}
 	}
 	return nil
+}
+
+func Dfs(start string, end string) []*Rooms {
+	if G.Visited == nil {
+		G.Visited = make(map[string]bool)
+	}
+	queue := []*Rooms{}
+	res := []*Rooms{}
+	queue = append(queue, G.RmStar)
+	G.Visited[start] = true
+	res = append(res, G.RmStar)
+	for len(queue) > 0 {
+		st := queue[0]
+		queue = queue[1:]
+		for _, next := range G.Network[st.Name] {
+			if !G.Visited[next.Name] {
+				res = append(res, next)
+
+				if next.Name == end {
+					return res
+				}
+
+				G.Visited[next.Name] = true
+				queue = append(queue, next)
+			}
+		}
+	}
+	return []*Rooms{}
 }
