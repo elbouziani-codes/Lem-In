@@ -1,5 +1,10 @@
 package lem_in
 
+import (
+	"fmt"
+	"log"
+)
+
 func GraphRoomsAndLinkes() {
 	G.Network = make(map[string][]*Rooms)
 	for _, link := range G.Links {
@@ -36,38 +41,62 @@ func equalPath(a, b []*Rooms) bool {
 
 func CreatGraph() [][]*Rooms {
 	var all [][]*Rooms
-	G.Visited = make(map[string]bool)
+	usedRooms := make(map[string]bool)
+
 	for {
+		G.Visited = make(map[string]bool)
+
+		// منع الغرف الداخلية المستعملة سابقاً
+		for name := range usedRooms {
+			G.Visited[name] = true
+		}
 		parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
 		if parent == nil {
-			break
+			if len(all) != 0 {
+				return all
+			}
+			log.Fatalln("Error in path not conection betwine star and end ")
 		}
 
 		path := GeniretPath(parent)
+		if path[0] == G.RmStar && path[len(path)-1] == G.RmEnd {
+			log.Fatalln("Error in path not conection betwine star and end ")
+		}
 		if len(all) > 0 {
 			last := all[len(all)-1]
 			if equalPath(last, path) {
 				break
 			}
 		}
+
 		all = append(all, path)
 
 		if len(path) == 2 {
 			break
 		}
-		G.Visited = make(map[string]bool)
-		for _, a := range all {
-			for _, room := range a {
-				if room != G.RmStar && room != G.RmEnd {
-					G.Visited[room.Name] = true
-				}
+		for _, room := range path {
+			if room != G.RmStar && room != G.RmEnd {
+				usedRooms[room.Name] = true
 			}
 		}
+	}
+	fmt.Println("All paths:")
+
+	for _, p := range all {
+
+		for _, r := range p {
+			fmt.Print(r)
+		}
+		fmt.Println()
+
 	}
 	return all
 }
 
 func Bfs(start string, end string) map[*Rooms]*Rooms {
+	if G.Visited == nil {
+		G.Visited = make(map[string]bool)
+	}
 	queue := []*Rooms{}
 	queue = append(queue, G.RmStar)
 	parent := make(map[*Rooms]*Rooms)
