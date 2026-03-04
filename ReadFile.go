@@ -31,6 +31,7 @@ func ReadAllLines(NameFile string) (string, bool) {
 	if !BOOL {
 		return str, false
 	}
+
 	validRoomsRepet()
 	validLinksRepet()
 	parsingAnts()
@@ -224,6 +225,7 @@ func check(b string) bool {
 	return true
 }
 
+// validate room is repeat
 func validRoomsRepet() {
 	for i := 0; i < len(lem_in.G.Rooms)-1; i++ {
 		for j := i + 1; j < len(lem_in.G.Rooms); j++ {

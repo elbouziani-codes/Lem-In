@@ -1,6 +1,8 @@
 package lem_in
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func GraphRoomsAndLinkes() {
 	G.Network = make(map[string][]*Rooms)
@@ -8,8 +10,8 @@ func GraphRoomsAndLinkes() {
 		G.Network[link.From.Name] = append(G.Network[link.From.Name], link.To)
 		G.Network[link.To.Name] = append(G.Network[link.To.Name], link.From)
 	}
-
 }
+
 func GeniretPath(parent map[*Rooms]*Rooms) []*Rooms {
 	cur := G.RmEnd
 	var res []*Rooms
@@ -24,29 +26,48 @@ func GeniretPath(parent map[*Rooms]*Rooms) []*Rooms {
 	return res
 }
 
-func CreatGraph() [][]*Rooms{
+func equalPath(a, b []*Rooms) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func CreatGraph() [][]*Rooms {
 	var all [][]*Rooms
 	G.Visited = make(map[string]bool)
 	for {
-    parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
-    if parent == nil {
-        break
-    }
+		parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
+		if parent == nil {
+			break
+		}
 
-    path := GeniretPath(parent)
-    all = append(all, path)
-	if len(path) == 2{
-		break
+		path := GeniretPath(parent)
+		if len(all) > 0 {
+			last := all[len(all)-1]
+			if equalPath(last, path) {
+				break
+			}
+		}
+		all = append(all, path)
+
+		if len(path) == 2 {
+			break
+		}
+		G.Visited = make(map[string]bool)
+		for _, a := range all {
+			for _, room := range a {
+				if room != G.RmStar && room != G.RmEnd {
+					G.Visited[room.Name] = true
+				}
+			}
+		}
 	}
-	G.Visited = make(map[string]bool)
-	for _, a := range all{
-    	for _, room := range a {
-        	if room != G.RmStar && room != G.RmEnd {
-            	G.Visited[room.Name] = true  
-        	}
-    	}
-	}
-}
 	fmt.Println("All paths:")
 	for _, p := range all {
 		for _, r := range p {
@@ -56,6 +77,7 @@ func CreatGraph() [][]*Rooms{
 	}
 	return all
 }
+
 func Bfs(start string, end string) map[*Rooms]*Rooms {
 	queue := []*Rooms{}
 	queue = append(queue, G.RmStar)
@@ -79,4 +101,3 @@ func Bfs(start string, end string) map[*Rooms]*Rooms {
 	}
 	return nil
 }
-
