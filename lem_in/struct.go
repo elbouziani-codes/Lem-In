@@ -14,6 +14,7 @@ type Links struct{
 	ID int
 	From *Rooms
 	To *Rooms
+	Capacity int
 }
 
 type Graph struct{

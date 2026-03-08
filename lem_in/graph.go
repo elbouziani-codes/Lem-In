@@ -1,15 +1,19 @@
 package lem_in
 
 import (
-	"fmt"
 	"log"
 )
 
 func GraphRoomsAndLinkes() {
 	G.Network = make(map[string][]*Rooms)
-	for _, link := range G.Links {
-		G.Network[link.From.Name] = append(G.Network[link.From.Name], link.To)
-		G.Network[link.To.Name] = append(G.Network[link.To.Name], link.From)
+	for i, _ := range G.Links {
+		G.Links[i].Capacity = 1
+
+		from := G.Links[i].From
+		to := G.Links[i].To
+
+		G.Network[from.Name] = append(G.Network[from.Name], to)
+		G.Network[to.Name] = append(G.Network[to.Name], from)
 	}
 }
 
@@ -17,8 +21,7 @@ func GeniretPath(parent map[*Rooms]*Rooms) []*Rooms {
 	cur := G.RmEnd
 	var res []*Rooms
 	for cur != nil {
-		fmt.Println(cur)
-		fmt.Println(parent[cur])
+
 		res = append(res, cur)
 		cur = parent[cur]
 	}
@@ -41,7 +44,18 @@ func equalPath(a, b []*Rooms) bool {
 	return true
 }
 
+func Capacity(a, b *Rooms) int {
+
+	for _, link := range G.Links {
+		if (link.From.Name == a.Name && link.To.Name == b.Name) || (link.From.Name == b.Name && link.To.Name == a.Name) {
+			return link.Capacity
+		}
+	}
+	return 0
+}
+
 func CreatGraph() [][]*Rooms {
+
 	multiPath := false
 	for _, v := range G.Network {
 		if len(v) > 2 {
@@ -50,26 +64,18 @@ func CreatGraph() [][]*Rooms {
 		}
 	}
 	var all [][]*Rooms
-	usedRooms := make(map[string]bool)
 	if multiPath {
 		for {
-			G.Visited = make(map[string]bool)
-
-			// منع الغرف الداخلية المستعملة سابقاً
-			for name := range usedRooms {
-				G.Visited[name] = true
-			}
 			parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
 			if parent == nil {
 				if len(all) != 0 {
 					return all
 				}
-				log.Fatalln("Error in path not conection betwine star and end ")
+				log.Fatalln("Error in path not conection betwine star and end 3")
 			}
-
 			path := GeniretPath(parent)
-			if path[0] == G.RmStar && path[len(path)-1] == G.RmEnd {
-				log.Fatalln("Error in path not conection betwine star and end ")
+			if path[0] != G.RmStar || path[len(path)-1] != G.RmEnd {
+				log.Fatalln("Error in path not conection betwine star and end 2")
 			}
 			if len(all) > 0 {
 				last := all[len(all)-1]
@@ -79,45 +85,47 @@ func CreatGraph() [][]*Rooms {
 			}
 
 			all = append(all, path)
+			UpdateCapacity(path)
 
 			if len(path) == 2 {
 				break
 			}
-			for _, room := range path {
-				if room != G.RmStar && room != G.RmEnd {
-					usedRooms[room.Name] = true
-				}
-			}
 		}
-	}else{
+	} else {
 		path := Dfs(G.RmStar.Name, G.RmEnd.Name)
-			if path == nil {
-				log.Fatalln("Error in path not conection betwine star and end ")
-			}
-
-			if path[0] == G.RmStar && path[len(path)-1] == G.RmEnd {
-				log.Fatalln("Error in path not conection betwine star and end ")
-			}
-			all = append(all, path)
-	}
-
-	fmt.Println("All paths:")
-
-	for _, p := range all {
-
-		for _, r := range p {
-			fmt.Print(r)
+		if path == nil {
+			log.Fatalln("Error in path not conection betwine star and end ")
 		}
-		fmt.Println()
 
+		if path[0] != G.RmStar || path[len(path)-1] != G.RmEnd {
+			log.Fatalln("Error in path not conection betwine star and end 1")
+		}
+		all = append(all, path)
 	}
 	return all
 }
 
-func Bfs(start string, end string) map[*Rooms]*Rooms {
-	if G.Visited == nil {
-		G.Visited = make(map[string]bool)
+func UpdateCapacity(path []*Rooms) {
+	for i := 0; i < len(path)-1; i++ {
+
+		a := path[i]
+		b := path[i+1]
+
+		for j := range G.Links {
+
+			if G.Links[j].From == a && G.Links[j].To == b {
+				G.Links[j].Capacity -= 1
+			}
+
+			if G.Links[j].From == b && G.Links[j].To == a {
+				G.Links[j].Capacity += 1
+			}
+		}
 	}
+}
+
+func Bfs(start string, end string) map[*Rooms]*Rooms {
+	G.Visited = make(map[string]bool)
 	queue := []*Rooms{}
 	queue = append(queue, G.RmStar)
 	parent := make(map[*Rooms]*Rooms)
@@ -125,9 +133,9 @@ func Bfs(start string, end string) map[*Rooms]*Rooms {
 	for len(queue) > 0 {
 		st := queue[0]
 		queue = queue[1:]
-		fmt.Println(st)
+
 		for _, next := range G.Network[st.Name] {
-			if !G.Visited[next.Name] {
+			if !G.Visited[next.Name] && Capacity(st, next) > 0 {
 				parent[next] = st
 
 				if next.Name == end {

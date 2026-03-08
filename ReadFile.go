@@ -185,6 +185,7 @@ func validLink(s string) {
 					ID:   lem_in.G.CountLinks,
 					From: &lem_in.G.Rooms[i],
 					To:   nil,
+					Capacity: 1,
 				})
 				count++
 				break
