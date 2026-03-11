@@ -2,13 +2,12 @@ package lem_in
 
 import (
 	"log"
+	"sort"
 )
 
 func GraphRoomsAndLinkes() {
 	G.Network = make(map[string][]*Rooms)
-	for i, _ := range G.Links {
-		G.Links[i].Capacity = 1
-
+	for i := range G.Links {
 		from := G.Links[i].From
 		to := G.Links[i].To
 
@@ -17,195 +16,159 @@ func GraphRoomsAndLinkes() {
 	}
 }
 
-func GeniretPath(parent map[*Rooms]*Rooms) []*Rooms {
-	cur := G.RmEnd
-	var res []*Rooms
-	for cur != nil {
-
-		res = append(res, cur)
-		cur = parent[cur]
-	}
-	// reverse
-	for i, j := 0, len(res)-1; i < j; i, j = i+1, j-1 {
-		res[i], res[j] = res[j], res[i]
-	}
-	return res
+// state is one BFS queue entry: the current room + the path taken so far + visited rooms.
+type state struct {
+	room    *Rooms
+	path    []*Rooms
+	visited map[string]bool
 }
 
-func equalPath(a, b []*Rooms) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func Capacity(a, b *Rooms) int {
-
-	for _, link := range G.Links {
-		if (link.From.Name == a.Name && link.To.Name == b.Name) || (link.From.Name == b.Name && link.To.Name == a.Name) {
-			return link.Capacity
-		}
-	}
-	return 0
-}
-
-func CreatGraph() [][]*Rooms {
-
-	multiPath := false
-	for _, v := range G.Network {
-		if len(v) > 2 {
-			multiPath = true
-			break
-		}
-	}
-	var all [][]*Rooms
-	if multiPath {
-		for {
-			parent := Bfs(G.RmStar.Name, G.RmEnd.Name)
-			if parent == nil {
-				if len(all) != 0 {
-					return all
-				}
-				log.Fatalln("Error in path not conection betwine star and end 3")
-			}
-			path := GeniretPath(parent)
-			if path[0] != G.RmStar || path[len(path)-1] != G.RmEnd {
-				log.Fatalln("Error in path not conection betwine star and end 2")
-			}
-			if len(all) > 0 {
-				last := all[len(all)-1]
-				if equalPath(last, path) {
-					break
-				}
-			}
-
-			all = append(all, path)
-			UpdateCapacity(path)
-		}
-	} else {
-		return FindAllPaths(G.RmStar, G.RmEnd)
-			
-	}
-	return all
-}
-
-
-func UpdateCapacity(path []*Rooms) {
-	for i := 0; i < len(path)-1; i++ {
-
-		a := path[i]
-		b := path[i+1]
-
-		for j := range G.Links {
-
-			if G.Links[j].From == a && G.Links[j].To == b {
-				G.Links[j].Capacity -= 1
-			}
-
-			if G.Links[j].From == b && G.Links[j].To == a {
-				G.Links[j].Capacity += 1
-			}
-		}
-	}
-}
-
-func FindAllPaths(start, end *Rooms) [][]*Rooms {
+// bfsFindAllPaths finds every simple path from start to end using BFS.
+func bfsFindAllPaths() [][]*Rooms {
 	var allPaths [][]*Rooms
-	var path []*Rooms
-	visited := make(map[string]bool)
 
-	var dfs func(*Rooms)
-	dfs = func(cur *Rooms) {
-		visited[cur.Name] = true
-		path = append(path, cur)
+	initVisited := map[string]bool{G.RmStar.Name: true}
+	queue := []state{{room: G.RmStar, path: []*Rooms{G.RmStar}, visited: initVisited}}
 
-		if cur == end {
-			tmp := make([]*Rooms, len(path))
-			copy(tmp, path)
-			allPaths = append(allPaths, tmp)
-		} else {
-			for _, next := range G.Network[cur.Name] {
-				if !visited[next.Name] {
-					dfs(next)
-				}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+
+		for _, next := range G.Network[cur.room.Name] {
+			if cur.visited[next.Name] {
+				continue
 			}
+
+			newPath := make([]*Rooms, len(cur.path), len(cur.path)+1)
+			copy(newPath, cur.path)
+			newPath = append(newPath, next)
+
+			if next == G.RmEnd {
+				allPaths = append(allPaths, newPath)
+				continue
+			}
+
+			newVisited := make(map[string]bool, len(cur.visited)+1)
+			for k, v := range cur.visited {
+				newVisited[k] = v
+			}
+			newVisited[next.Name] = true
+
+			queue = append(queue, state{room: next, path: newPath, visited: newVisited})
 		}
-
-		// backtrack
-		path = path[:len(path)-1]
-		visited[cur.Name] = false
 	}
-
-	dfs(start)
-	// fmt.Println("///////////////////////////////////////////////////////")
-
-	// for _, p := range allPaths {
-	// 	for _, v := range p {
-	// 		fmt.Print(v)
-	// 	}
-	// 	fmt.Println()
-	// 	fmt.Println("//--------------------------------------------------//")
-	// }
-	// fmt.Println("///////////////////////////////////////////////////////")
-
 	return allPaths
 }
 
-func Bfs(start string, end string) map[*Rooms]*Rooms {
-	G.Visited = make(map[string]bool)
-	queue := []*Rooms{}
-	queue = append(queue, G.RmStar)
-	parent := make(map[*Rooms]*Rooms)
-	G.Visited[start] = true
-	for len(queue) > 0 {
-		st := queue[0]
-		queue = queue[1:]
+// pathsOverlap returns true if two paths share any intermediate room (excluding start and end).
+func pathsOverlap(a, b []*Rooms) bool {
+	set := make(map[string]bool)
+	for _, r := range a[1 : len(a)-1] {
+		set[r.Name] = true
+	}
+	for _, r := range b[1 : len(b)-1] {
+		if set[r.Name] {
+			return true
+		}
+	}
+	return false
+}
 
-		for _, next := range G.Network[st.Name] {
-			if !G.Visited[next.Name] && Capacity(st, next) > 0 {
-				parent[next] = st
+// simulateTurns calculates the number of turns needed for a given set of paths.
+func simulateTurns(paths [][]*Rooms, totalAnts int) int {
+	if len(paths) == 0 {
+		return totalAnts + 1 // impossible, return large number
+	}
 
-				if next.Name == end {
-					return parent
+	// sort paths by length
+	sort.Slice(paths, func(i, j int) bool {
+		return len(paths[i]) < len(paths[j])
+	})
+
+	// distribute ants using the same greedy logic as ShortPath
+	nb := make([]int, len(paths))
+	remaining := totalAnts
+	for remaining > 0 {
+		best := 0
+		for i := 1; i < len(paths); i++ {
+			if len(paths[i])+nb[i] < len(paths[best])+nb[best] {
+				best = i
+			}
+		}
+		nb[best]++
+		remaining--
+	}
+
+	// turns = max(nb[i] + len(paths[i]) - 2) across all paths
+	maxTurns := 0
+	for i := range paths {
+		if nb[i] == 0 {
+			continue
+		}
+		t := nb[i] + len(paths[i]) - 2
+		if t > maxTurns {
+			maxTurns = t
+		}
+	}
+	return maxTurns
+}
+
+// CreatGraph finds all paths via BFS, then selects the best non-overlapping combination.
+func CreatGraph() [][]*Rooms {
+	allPaths := bfsFindAllPaths()
+
+	if len(allPaths) == 0 {
+		log.Fatalln("ERROR: no path between start and end")
+	}
+
+	// sort all paths by length
+	sort.Slice(allPaths, func(i, j int) bool {
+		return len(allPaths[i]) < len(allPaths[j])
+	})
+
+	totalAnts := len(G.Ants)
+	bestTurns := simulateTurns([][]*Rooms{allPaths[0]}, totalAnts)
+	bestCombo := [][]*Rooms{allPaths[0]}
+
+	// recursive search for the best non-overlapping combination
+	var findBest func(idx int, current [][]*Rooms, usedRooms map[string]bool)
+	findBest = func(idx int, current [][]*Rooms, usedRooms map[string]bool) {
+		if len(current) > 0 {
+			turns := simulateTurns(current, totalAnts)
+			if turns < bestTurns {
+				bestTurns = turns
+				bestCombo = make([][]*Rooms, len(current))
+				copy(bestCombo, current)
+			}
+		}
+
+		for i := idx; i < len(allPaths); i++ {
+			// check if this path overlaps with already selected paths
+			overlaps := false
+			for _, r := range allPaths[i][1 : len(allPaths[i])-1] {
+				if usedRooms[r.Name] {
+					overlaps = true
+					break
 				}
+			}
+			if overlaps {
+				continue
+			}
 
-				G.Visited[next.Name] = true
-				queue = append(queue, next)
+			// select this path
+			for _, r := range allPaths[i][1 : len(allPaths[i])-1] {
+				usedRooms[r.Name] = true
+			}
+			findBest(i+1, append(current, allPaths[i]), usedRooms)
+
+			// backtrack
+			for _, r := range allPaths[i][1 : len(allPaths[i])-1] {
+				delete(usedRooms, r.Name)
 			}
 		}
 	}
-	return nil
+
+	findBest(0, nil, make(map[string]bool))
+	return bestCombo
 }
 
-func Dfs(start string, end string) []*Rooms {
-	if G.Visited == nil {
-		G.Visited = make(map[string]bool)
-	}
-	queue := []*Rooms{}
-	res := []*Rooms{}
-	queue = append(queue, G.RmStar)
-	G.Visited[start] = true
-	res = append(res, G.RmStar)
-	for len(queue) > 0 {
-		st := queue[0]
-		queue = queue[1:]
-		for _, next := range G.Network[st.Name] {
-			if !G.Visited[next.Name] {
-				res = append(res, next)
-
-				if next.Name == end {
-					return res
-				}
-
-				G.Visited[next.Name] = true
-				queue = append(queue, next)
-			}
-		}
-	}
-	return []*Rooms{}
-}

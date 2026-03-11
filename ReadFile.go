@@ -27,6 +27,16 @@ func ReadAllLines(NameFile string) (string, bool) {
 	}
 
 	validRoomsRepet()
+	// Re-resolve RmStar and RmEnd — slice growth during room parsing
+	// may have reallocated the backing array, invalidating earlier pointers.
+	for i := range lem_in.G.Rooms {
+		if lem_in.G.Rooms[i].Star {
+			lem_in.G.RmStar = &lem_in.G.Rooms[i]
+		}
+		if lem_in.G.Rooms[i].End {
+			lem_in.G.RmEnd = &lem_in.G.Rooms[i]
+		}
+	}
 	validLinksRepet()
 	parsingAnts()
 	checkRoomLinkes()
