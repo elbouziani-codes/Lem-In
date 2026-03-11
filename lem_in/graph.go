@@ -86,24 +86,14 @@ func CreatGraph() [][]*Rooms {
 
 			all = append(all, path)
 			UpdateCapacity(path)
-
-			if len(path) == 2 {
-				break
-			}
 		}
 	} else {
-		path := Dfs(G.RmStar.Name, G.RmEnd.Name)
-		if path == nil {
-			log.Fatalln("Error in path not conection betwine star and end ")
-		}
-
-		if path[0] != G.RmStar || path[len(path)-1] != G.RmEnd {
-			log.Fatalln("Error in path not conection betwine star and end 1")
-		}
-		all = append(all, path)
+		return FindAllPaths(G.RmStar, G.RmEnd)
+			
 	}
 	return all
 }
+
 
 func UpdateCapacity(path []*Rooms) {
 	for i := 0; i < len(path)-1; i++ {
@@ -122,6 +112,48 @@ func UpdateCapacity(path []*Rooms) {
 			}
 		}
 	}
+}
+
+func FindAllPaths(start, end *Rooms) [][]*Rooms {
+	var allPaths [][]*Rooms
+	var path []*Rooms
+	visited := make(map[string]bool)
+
+	var dfs func(*Rooms)
+	dfs = func(cur *Rooms) {
+		visited[cur.Name] = true
+		path = append(path, cur)
+
+		if cur == end {
+			tmp := make([]*Rooms, len(path))
+			copy(tmp, path)
+			allPaths = append(allPaths, tmp)
+		} else {
+			for _, next := range G.Network[cur.Name] {
+				if !visited[next.Name] {
+					dfs(next)
+				}
+			}
+		}
+
+		// backtrack
+		path = path[:len(path)-1]
+		visited[cur.Name] = false
+	}
+
+	dfs(start)
+	// fmt.Println("///////////////////////////////////////////////////////")
+
+	// for _, p := range allPaths {
+	// 	for _, v := range p {
+	// 		fmt.Print(v)
+	// 	}
+	// 	fmt.Println()
+	// 	fmt.Println("//--------------------------------------------------//")
+	// }
+	// fmt.Println("///////////////////////////////////////////////////////")
+
+	return allPaths
 }
 
 func Bfs(start string, end string) map[*Rooms]*Rooms {

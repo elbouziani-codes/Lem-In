@@ -11,6 +11,8 @@ const (
 	START = -1
 	END   = -2
 )
+
+
 func MoveAnt(all [][]*Rooms) {
 	all, nb := ShortPath(all)
 	res := ""
@@ -22,7 +24,7 @@ func MoveAnt(all [][]*Rooms) {
 			for j := len(all[i]) - 1; j > 0; j-- {
 				x := j - 1
 				if all[i][x].IN == Full && all[i][j].IN == END {
-					
+
 					line += all[i][x].Ants.ID + "-" + all[i][j].Name + " "
 					all[i][x].IN = 0
 					all[i][x].Ants = nil
@@ -44,6 +46,14 @@ func MoveAnt(all [][]*Rooms) {
 					all[i][j].IN = 1
 					all[i][x].Ants = nil
 					line += all[i][j].Ants.ID + "-" + all[i][j].Name + " "
+				} else if all[i][x].IN == START && all[i][j].IN == END && nb[i] > 0 {
+					nb[i]--
+					move = true
+					if len(G.Ants) == 0 {
+						continue
+					}
+					line += G.Ants[0].ID + "-" + all[i][j].Name + " "
+					G.Ants = G.Ants[1:]
 				}
 			}
 		}
