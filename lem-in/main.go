@@ -24,6 +24,6 @@ func main() {
 		PrintError()
 		return
 	}
-
+	fmt.Println(inputLines)
 	Simulate(graph, bestPaths, inputLines)
 }

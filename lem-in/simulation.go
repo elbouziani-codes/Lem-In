@@ -5,102 +5,120 @@ import (
 	"strings"
 )
 
-// Ant tracks a single ant as it navigates its assigned path
 type Ant struct {
 	ID    int
 	Path  []*Room
 	Index int // -1 means at Start, len(Path) means End
 }
 
-// Simulate assigns ants to the optimal paths and tracks their turn-by-turn movements.
-func Simulate(graph *Graph, paths [][]*Room, inputLines []string) {
-	// 1. Output the input exactly as read, followed by a blank line
-	for _, line := range inputLines {
-		fmt.Println(line)
-	}
-	fmt.Println()
-
-	// 2. Format paths: Add End room to the end to make simulating uniform
+func Simulate(graph *Graph, paths [][]*Room, inputLines string) {
+	// 1. جهّز المسارات (أضف end)
 	fullPaths := make([][]*Room, len(paths))
 	for i, p := range paths {
-		fullPaths[i] = make([]*Room, len(p), len(p)+1)
-		copy(fullPaths[i], p)
-		fullPaths[i] = append(fullPaths[i], graph.End)
+		fullPaths[i] = append(p, graph.End)
 	}
 
-	// 3. Pre-calculate optimal distribution of ants across the paths
-	antsPerPath := make([]int, len(fullPaths))
-	for i := 0; i < graph.NumAnts; i++ {
-		bestP := -1
-		bestTime := 1000000
-		for p, path := range fullPaths {
-			length := len(path) // Length from start to end (number of edges)
-			time := length + antsPerPath[p]
-			if time < bestTime {
-				bestTime = time
-				bestP = p
-			}
-		}
-		antsPerPath[bestP]++
-	}
+	// 2. وزّع النمل (سريع جدًا)
+	antsPerPath := DistributeAnts(fullPaths, int64(graph.NumAnts))
 
-	// 4. Simulate movements
-	// activeAnts stores ants currently on a path.
-	// We append new ants to the back, meaning activeAnts[0] is the oldest and furthest.
+	// 3. محاكاة الحركة
 	activeAnts := make([][]*Ant, len(fullPaths))
-	nextAntID := 1
-	finishedAnts := 0
+	var nextID int64 = 1
+	var finished int64 = 0
 
-	for finishedAnts < graph.NumAnts {
+	for finished < int64(graph.NumAnts) {
 		var moves []string
 
-		for pIdx, p := range fullPaths {
-			// First move ants already on the path
-			for i := 0; i < len(activeAnts[pIdx]); i++ {
-				ant := activeAnts[pIdx][i]
-				ant.Index++
-				room := p[ant.Index]
+		for pIdx, path := range fullPaths {
 
+			// حرّك النمل الموجود
+			for _, ant := range activeAnts[pIdx] {
+				ant.Index++
+				if ant.Index >= len(path) {
+					continue
+				}
+
+				room := path[ant.Index]
 				moves = append(moves, fmt.Sprintf("L%d-%s", ant.ID, room.Name))
 
 				if room == graph.End {
-					finishedAnts++
+					finished++
 				}
 			}
 
-			// Then spawn a new ant on this path space permitting
+			// أضف نملة جديدة إذا متاح
 			if antsPerPath[pIdx] > 0 {
 				ant := &Ant{
-					ID:    nextAntID,
-					Path:  p,
-					Index: 0,
+					ID:    int(nextID),
+					Path:  path,
+					Index: -1,
 				}
-				nextAntID++
+				nextID++
 				antsPerPath[pIdx]--
 
-				room := p[0]
+				ant.Index++
+				room := path[ant.Index]
 				moves = append(moves, fmt.Sprintf("L%d-%s", ant.ID, room.Name))
 
-				if room == graph.End {
-					finishedAnts++
-				} else {
-					// Pushed to back of slice. Will be moved next turn in the loops above!
+				if room != graph.End {
 					activeAnts[pIdx] = append(activeAnts[pIdx], ant)
+				} else {
+					finished++
 				}
 			}
 
-			// Remove finished ants from active array to free memory and slice processing
-			var remaining []*Ant
+			// احذف النمل الذي وصل للنهاية
+			tmp := activeAnts[pIdx][:0]
 			for _, ant := range activeAnts[pIdx] {
-				if ant.Path[ant.Index] != graph.End {
-					remaining = append(remaining, ant)
+				if ant.Index < len(path)-1 {
+					tmp = append(tmp, ant)
 				}
 			}
-			activeAnts[pIdx] = remaining
+			activeAnts[pIdx] = tmp
 		}
 
 		if len(moves) > 0 {
 			fmt.Println(strings.Join(moves, " "))
 		}
 	}
+}
+
+func DistributeAnts(paths [][]*Room, numAnts int64) []int64 {
+	n := len(paths)
+	ants := make([]int64, n)
+
+	// أطوال المسارات
+	lengths := make([]int64, n)
+	for i := 0; i < n; i++ {
+		lengths[i] = int64(len(paths[i]))
+	}
+
+	// ابحث عن أقل T
+	var T int64
+	for {
+		var sum int64
+		for i := 0; i < n; i++ {
+			if T >= lengths[i] {
+				sum += T - lengths[i] + 1
+			}
+		}
+		if sum >= numAnts {
+			break
+		}
+		T++
+	}
+
+	// وزّع النمل
+	remaining := numAnts
+	for i := 0; i < n && remaining > 0; i++ {
+		if T >= lengths[i] {
+			ants[i] = T - lengths[i] + 1
+			if ants[i] > remaining {
+				ants[i] = remaining
+			}
+			remaining -= ants[i]
+		}
+	}
+
+	return ants
 }
